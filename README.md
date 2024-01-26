@@ -1,1 +1,1 @@
-# PY4_gs
+# Receiving & decoding PY4 beacon packets
