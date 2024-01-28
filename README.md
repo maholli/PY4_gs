@@ -29,13 +29,14 @@ This repo supports only RPI-based stations for now.
 
 General python packages
 ```bash
+# uncomment below if you have trouble with pip. Adjust python version accordingly.
+# sudo rm /usr/lib/python3.12/EXTERNALLY-MANAGED
 pip install msgpack paho-mqtt numpy
 ```
 
-Setting up CircuitPython
+Setting up CircuitPython (if not done already)
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo rm /usr/lib/python3.12/EXTERNALLY-MANAGED
 sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get install -y python3-pip ; sudo apt install --upgrade python3-setuptools
 sudo raspi-config nonint do_i2c 0
@@ -55,4 +56,11 @@ There are two options for RX operation:
 
 If your groundstation has internet access, please consider running py4_rx_mqtt.py (no additional setup required) to help us keep track of beacon packets over time. A public grafana dashboard will be available to view historic data.
 
+Default radio config is an unmodified [Adafruit LoRa Bonnet](https://www.adafruit.com/product/4074) connected to the RPI. See [py4_rx.py](./rx_only/rpi_radio_helpers.py) to adjust pin assignments or LoRa parameters.
 
+To start the script:
+```bash
+cd PY_gs/rx_only && python3 py4_rx_mqtt.py
+```
+
+By default, the ground station will parse and print a formatted version of each beacon. To disable this, comment out the `PARSE_AND_PRINT_BEACONS` line of the respective script.

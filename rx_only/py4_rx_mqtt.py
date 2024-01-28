@@ -19,13 +19,15 @@ import paho.mqtt.client as mqtt
 from rpi_radio_helpers import radio1, cfg  # radio setup and config
 from beacon_parse_json import parse_beacon # PY4 beacon data unpacking
 
+# constants
+PARSE_AND_PRINT_BEACONS = True
+GROUND_STATION_ID = "gs01"
+MQTT_DATA_TOPIC   = f"py4/{GROUND_STATION_ID}/pckts"
+
 # load overly obscured MQTT credentials
 with open('py4_gs_config.bin','rb') as f:
     l=f.read()
     py4_gs_config=eval(msgpack.unpackb(unhexlify(bytes(struct.unpack(f'>{int.from_bytes(l[:3],"big")}i',l[3:])))))
-
-GROUND_STATION_ID = "gs01"
-MQTT_DATA_TOPIC   = f"py4/{GROUND_STATION_ID}/pckts"
 
 # Setup MQTT client stuff
 mqttc = mqtt.Client(client_id=GROUND_STATION_ID)
@@ -42,8 +44,9 @@ def save_cache():
     pckt=packet_cache.pop(0)
     print(f'{pckt[1]} GS Time: {pckt[0]}, RSSI: {pckt[2]-137}')
     try:
-        parsed_data=parse_beacon(pckt[3],debug=False)
-        if parsed_data: pprint(parsed_data)
+        if PARSE_AND_PRINT_BEACONS:
+            parsed_data=parse_beacon(pckt[3],debug=True)
+            # if parsed_data: pprint(parsed_data) # debug json
     except Exception as e:
         print(f'parsing error? {e}')
         parsed_data={}
