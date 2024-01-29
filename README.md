@@ -56,7 +56,7 @@ There are two options for RX operation:
 
 If your groundstation has internet access, please consider running py4_rx_mqtt.py (no additional setup required) to help us keep track of beacon packets over time. A public grafana dashboard will be available to view historic data.
 
-Default radio config is an unmodified [Adafruit LoRa Bonnet](https://www.adafruit.com/product/4074) connected to the RPI. See [py4_rx.py](./rpi_radio_helpers/rpi_radio_helpers.py) to adjust pin assignments or LoRa parameters.
+Default radio config is an unmodified [Adafruit LoRa Bonnet](https://www.adafruit.com/product/4074) connected to the RPI. See [rpi_radio_helpers.py](./rx_only/rpi_radio_helpers.py) to adjust pin assignments or LoRa parameters.
 
 To start the script:
 ```bash
