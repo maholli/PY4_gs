@@ -7,7 +7,7 @@ PY4 Beacon modulation parameters
 |     LoRa Parameter        |   Value       |
 |:----------------------:   |:---------:    |
 |       Center Frequency    | 915.6 MHz     |
-|       Spreading Factor    | SF7           |
+|       Spreading Factor    | 7             |
 |              Bandwidth    | 62.5 kHz      |
 |            Coding Rate    | 4 (CR4/8)     |
 |                    CRC    | True          |
