@@ -239,7 +239,8 @@
         attribute."""
         c=event.target.result.encode()
         b=parse_beacon(c,debug=False)
-        document["zone3"].text = b
+        addTableSummary(b)
+        #document["zone3"].text = b
 
     @bind("#drop_zone", "drop")
     def handleFileSelect(evt):
@@ -260,6 +261,23 @@
         evt.preventDefault()
         evt.dataTransfer.dropEffect = 'copy' # Explicitly show this is a copy.
 
+    def addTableSummary(data):
+        t=TABLE()
+        if data:
+            keys=list(data.keys())
+            keys=sorted(keys)
+            halfway=len(keys)//2
+            #print(dir(document["zone3"].style))
+            for i in range(halfway):
+                #print(i,i+halfway)
+                t <= TR(TD(B(keys[i]))+TD(data[keys[i]])+TD(B(keys[i+1]))+TD(data[keys[i+1]]))
+            t <= TR(TD(B(keys[halfway]))+TD(data[keys[halfway]])+TD(B(keys[halfway+1]))+TD(data[keys[halfway+1]]))
+            t <= TR(TD('---')+TD('---')+TD('---')+TD('---'))
+            document["zone4"] <= t
+            document["zone4"].style = {"padding": "5px",
+                       "backgroundColor": "#d0d0d0",
+                       "columnWidth":"20em",
+                       }
 
     def clearDefault(ev):
         document["zone2"].clear()
@@ -274,20 +292,7 @@
         if len(a) == 120:
             a=unhexlify(a)
         b=parse_beacon(a,debug=False)
-        if b:
-            keys=tuple(b.keys())
-            halfway=len(keys)//2
-            #print(dir(document["zone3"].style))
-            for i in range(halfway):
-                #print(i,i+halfway)
-                t <= TR(TD(B(keys[i]))+TD(b[keys[i]])+TD(B(keys[i+1]))+TD(b[keys[i+1]]))
-
-            document["zone3"] <= t
-
-            document["zone3"].style = {"padding": "5px",
-                       "backgroundColor": "#d0d0d0",
-                       "columnWidth":"20em",
-                       }
+        addTableSummary(b)
 
     document["zone2"].bind("click", clearDefault)
     document["button1"].bind("click", change)
@@ -297,6 +302,7 @@
     <br><button id="button1">evaluate</button>  <button id="button2">clear</button>
     <table id="zone3">
     </table>
+    <table id="zone4"><table>
     </body>
 
 </html>
