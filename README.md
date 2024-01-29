@@ -78,7 +78,9 @@ It can be helpful to test your RX ground station without relying on a satellite 
 # python bytes format
 b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'
 ```
-If you transmit the above packet from a second rfm9x radio setup while your RX station is running, you should see a parsed beacon message output in the terminal of your RX station running the python script. NOTE: if you're using a CircuitPython library (pycubed_rfm9x.py, adafruit_rfm9x.py, etc...) to transmit the dummy packet, the library automatically inserts a 4-byte RadioHead header to the front of the data payload. Therefore, to transmit the above 60-byte payload you will need to trim the first 4 bytes off the dummy packet as well as set the `destionation` and `node` bytes of the radio object as shown below. RadioHead header format: `[TO] [FROM] [MSG ID] [FLAGS]`.
+If you transmit the above packet from a second rfm9x radio setup while your RX station is running, you should see a parsed beacon message output in the terminal of your RX station running the python script.
+
+NOTE: if you're using a CircuitPython library (pycubed_rfm9x.py, adafruit_rfm9x.py, etc...) to transmit the dummy packet, the library automatically inserts a 4-byte RadioHead header to the front of the data payload. Therefore, to transmit the above 60-byte payload you will need to trim the first 4 bytes off the dummy packet as well as set the `destination` and `node` bytes of the radio object as shown below. RadioHead header format: `[TO] [FROM] [MSG ID] [FLAGS]`.
 
 ```python
 import time,busio,board
