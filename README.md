@@ -1,4 +1,5 @@
-# PY4 is a joint CMU / NASA Ames Small Spacecraft Constellation.
+💡 PY4 is a joint CMU / NASA Ames Small Spacecraft Constellation.
+
 General mission webpage TBD
 
 ----
