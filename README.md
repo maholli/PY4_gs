@@ -70,3 +70,50 @@ cd PY_gs/rx_only && python3 py4_rx_mqtt.py
 ```
 
 By default, the ground station will parse and print a formatted version of each beacon. To disable this, comment out the `PARSE_AND_PRINT_BEACONS` line of the respective script.
+
+## Testing your RX station
+It can be helpful to test your RX ground station without relying on a satellite pass. Below is a 60-byte packet exactly as it would be stored in the radio's FIFO buffer upon successful beacon reception. 
+
+```python
+# python bytes format
+b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'
+```
+If you transmit the above packet from a second rfm9x radio setup while your RX station is running, you should see a parsed beacon message output in the terminal of your RX station running the python script. NOTE: if you're using a CircuitPython library (pycubed_rfm9x.py, adafruit_rfm9x.py, etc...) to transmit the dummy packet, the library automatically inserts a 4-byte RadioHead header to the front of the data payload. Therefore, to transmit the above 60-byte payload you will need to trim the first 4 bytes off the dummy packet as well as set the `destionation` and `node` bytes of the radio object as shown below. RadioHead header format: `[TO] [FROM] [MSG ID] [FLAGS]`.
+
+```python
+import time,busio,board
+from digitalio import DigitalInOut, Pull
+import pycubed_rfm9x
+
+# radio1 - STOCK ADAFRUIT BONNET https://www.adafruit.com/product/4074
+CS1    = DigitalInOut(board.CE1)
+RESET1 = DigitalInOut(board.D25)
+IRQ1   = DigitalInOut(board.D22)
+
+# set pins before radio init
+CS1.switch_to_output(value=True)
+RESET1.switch_to_output(value=True)
+IRQ1.pull=Pull.DOWN
+
+cfg = {
+    'r1b':(1,7,62500,1),  # default radio1 beacon config (CRC,SF,BW,LDRO) symb=2ms
+}
+
+# dummy 60-byte beacon packet to send
+dummy_packet = b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'
+
+spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+radio1=pycubed_rfm9x.RFM9x(spi, CS1, RESET1, 915.6, code_rate=8, baudrate=5_000_000)
+radio1.dio0 = IRQ1
+radio1.ack_delay= 0.2
+radio1.ack_wait = 2
+radio1.set_params(cfg['r1b']) # default CRC True, SF7, BW62500
+radio1._write_u8(0x11,0b00110111) # IRQ RxTimeout,RxDone,TxDone
+radio1.listen()
+
+# set the node id to the one used in the packet
+radio1.node = dummy_packet[1]
+# set the destination byte and transmit the packet
+radio1.send(dummy_packet[4:],destination=dummy_packet[0],keep_listening=True)
+```
+
