@@ -9,19 +9,37 @@
         <title>PY4 Parser</title>
         <!-- <script src="https://cdn.jsdelivr.net/npm/brython@3/brython.min.js"></script> -->
         <!-- <script src="https://cdn.jsdelivr.net/npm/brython@3/brython_stdlib.js"></script> -->
+        <style>
+        #drop_zone {
+          border: 2px dashed #bbb;
+          border-radius: 5px;
+          padding: 25px;
+          text-align: center;
+          font: 20pt bold;
+          color: #bbb;
+        }
+        </style>
     </head>
     <body>
-    <span id="zone1" class="zone">Paste Beacon Data</span>
-    <br><div style="padding-left:1em;width:auto;word-break:break-all;">b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'</div>
-    <br>
+    <h1 id="zone1" class="zone" style="text-align:Left;">PY4 Manual Beacon Parser</h1>
+    Accepted Formats:<br><br>
+    <div style="padding-left:1em;width:75%;word-break:break-all;">
+        Raw Bytes:<br>
+        b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'<br><br>
+        Hexlified:<br>
+        b'494c00000500000080386d49f31152000a4009000000b1005201a40001090051feb5feddff02001f0018c600780048019804130ed800000000000049'<br><br>
+        Binary File:
+        <div id="drop_zone">Drop files here</div>
+    </div>
     <script type="text/python">
-    from browser import document, html
+    from browser import document, html, bind, window
     #from helpers.beacon_parse_json import parse_beacon
     import struct, time, pprint
     from collections import OrderedDict
     from browser.html import TABLE, TR, TH, TD, B
     import struct, time
     from collections import OrderedDict
+    from binascii import unhexlify, hexlify
 
     sats = OrderedDict({
         0x49:'GS',
@@ -212,6 +230,37 @@
                 print()
             return parsed_beacon_data
 
+    Date = window.Date.new
+
+    def onload(event):
+        """Triggered when file is read. The FileReader instance is
+        event.target.
+        The file content, as text, is the FileReader instance's "result"
+        attribute."""
+        c=event.target.result.encode()
+        b=parse_beacon(c,debug=False)
+        document["zone3"].text = b
+
+    @bind("#drop_zone", "drop")
+    def handleFileSelect(evt):
+        evt.stopPropagation()
+        evt.preventDefault()
+        files = evt.dataTransfer.files # FileList object.
+        output = []
+        _ul = html.UL()
+        for f in files:
+            print(f.size)
+            reader = window.FileReader.new()
+            reader.readAsBinaryString(f)
+            reader.bind("load", onload)
+
+    @bind("#drop_zone", "dragover")
+    def handleDragOver(evt):
+        evt.stopPropagation()
+        evt.preventDefault()
+        evt.dataTransfer.dropEffect = 'copy' # Explicitly show this is a copy.
+
+
     def clearDefault(ev):
         document["zone2"].clear()
 
@@ -221,11 +270,10 @@
     def change(event):
         document["zone3"].clear()
         t=TABLE()
-        # document["zone1"].textContent = f"Hello {document['zone2'].value} !"
         a = eval(document['zone2'].value)
+        if len(a) == 120:
+            a=unhexlify(a)
         b=parse_beacon(a,debug=False)
-        #c=pprint.pformat(b).replace('\n', '<br>')
-        #document["zone3"].textContent = c
         if b:
             keys=tuple(b.keys())
             halfway=len(keys)//2
@@ -234,8 +282,6 @@
                 #print(i,i+halfway)
                 t <= TR(TD(B(keys[i]))+TD(b[keys[i]])+TD(B(keys[i+1]))+TD(b[keys[i+1]]))
 
-            #for k,v in b.items():
-            #    t <= TR(TD(k)+TD(v))
             document["zone3"] <= t
 
             document["zone3"].style = {"padding": "5px",
@@ -249,16 +295,7 @@
     </script>
     <br><textarea id="zone2" rows=10 autocomplete="off" font-size="9px" style="padding-left:1em;width:auto;min-width:75%;">Paste beacon data here....</textarea>
     <br><button id="button1">evaluate</button>  <button id="button2">clear</button>
-
-    <!-- <br><span id="zone3" class="zone">Parsed beacon data:</span> -->
-    <!-- style="background-color: red; -->
     <table id="zone3">
-    <!-- tr>
-    <td id="zone3" width="50%" height="10%" style="padding-left:3%;margin-left:20em">
-    </td>
-    <td id="right">
-    </td>
-    </tr> -->
     </table>
     </body>
 
