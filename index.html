@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta name="description" content="PY4 Parser">
+        <meta charset="utf-8">
+        <script type="text/javascript" src="brython_min.js"></script>
+        <script type="text/javascript" src="brython_stdlib.js"></script>
+        <title>PY4 Parser</title>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/brython@3/brython.min.js"></script> -->
+        <!-- <script src="https://cdn.jsdelivr.net/npm/brython@3/brython_stdlib.js"></script> -->
+    </head>
+    <body>
+    <span id="zone1" class="zone">Paste Beacon Data</span>
+    <br><div style="padding-left:1em;width:auto;word-break:break-all;">b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'</div>
+    <br>
+    <script type="text/python">
+    from browser import document, html
+    from helpers.beacon_parse_json import parse_beacon
+    import struct, time, pprint
+    from collections import OrderedDict
+    from browser.html import TABLE, TR, TH, TD, B
+
+    def clearDefault(ev):
+        document["zone2"].clear()
+
+    def clear(ev):
+        document["zone3"].clear()
+
+    def change(event):
+        document["zone3"].clear()
+        t=TABLE()
+        # document["zone1"].textContent = f"Hello {document['zone2'].value} !"
+        a = eval(document['zone2'].value)
+        b=parse_beacon(a,debug=False)
+        #c=pprint.pformat(b).replace('\n', '<br>')
+        #document["zone3"].textContent = c
+        if b:
+            keys=tuple(b.keys())
+            halfway=len(keys)//2
+            #print(dir(document["zone3"].style))
+            for i in range(halfway):
+                #print(i,i+halfway)
+                t <= TR(TD(B(keys[i]))+TD(b[keys[i]])+TD(B(keys[i+1]))+TD(b[keys[i+1]]))
+
+            #for k,v in b.items():
+            #    t <= TR(TD(k)+TD(v))
+            document["zone3"] <= t
+
+            document["zone3"].style = {"padding": "5px",
+                       "backgroundColor": "#d0d0d0",
+                       "columnWidth":"20em",
+                       }
+
+    document["zone2"].bind("click", clearDefault)
+    document["button1"].bind("click", change)
+    document["button2"].bind("click", clear)
+    </script>
+    <br><textarea id="zone2" rows=10 autocomplete="off" font-size="9px" style="padding-left:1em;width:auto;min-width:75%;">Paste beacon data here....</textarea>
+    <br><button id="button1">evaluate</button>  <button id="button2">clear</button>
+
+    <!-- <br><span id="zone3" class="zone">Parsed beacon data:</span> -->
+    <!-- style="background-color: red; -->
+    <table id="zone3">
+    <!-- tr>
+    <td id="zone3" width="50%" height="10%" style="padding-left:3%;margin-left:20em">
+    </td>
+    <td id="right">
+    </td>
+    </tr> -->
+    </table>
+    </body>
+
+</html>
