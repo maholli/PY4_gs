@@ -80,9 +80,11 @@ b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\x
 ```
 If you transmit the above packet from a second rfm9x radio setup while your RX station is running, you should see a parsed beacon message output in the terminal of your RX station running the python script.
 
-NOTE: if you're using a CircuitPython library (pycubed_rfm9x.py, adafruit_rfm9x.py, etc...) to transmit the dummy packet, the library automatically inserts a 4-byte RadioHead header to the front of the data payload. Therefore, to transmit the above 60-byte payload you will need to trim the first 4 bytes off the dummy packet as well as set the `destination` and `node` bytes of the radio object as shown below. RadioHead header format: `[TO] [FROM] [MSG ID] [FLAGS]`.
+NOTE: if you're using a CircuitPython library (pycubed_rfm9x.py, adafruit_rfm9x.py, etc...) to transmit the dummy packet, the library automatically inserts a 4-byte RadioHead header to the front of the data payload. Therefore, to transmit the above 60-byte payload you will need to trim the first 4 bytes off the dummy packet as well as set the `destination` and `node` bytes of the radio object as shown below. RadioHead header format: `[TO] [FROM] [MSG ID] [FLAGS]` (`[MSG ID]` and `[FLAGS]` will always be 0 in a beacon packet)
 
 ```python
+#!/usr/bin/python3
+
 import time,busio,board
 from digitalio import DigitalInOut, Pull
 import pycubed_rfm9x
@@ -107,6 +109,7 @@ dummy_packet = b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 radio1=pycubed_rfm9x.RFM9x(spi, CS1, RESET1, 915.6, code_rate=8, baudrate=5_000_000)
 radio1.dio0 = IRQ1
+radio1.node = dummy_packet[1]
 radio1.ack_delay= 0.2
 radio1.ack_wait = 2
 radio1.set_params(cfg['r1b']) # default CRC True, SF7, BW62500
@@ -114,8 +117,11 @@ radio1._write_u8(0x11,0b00110111) # IRQ RxTimeout,RxDone,TxDone
 radio1.listen()
 
 # set the node id to the one used in the packet
-radio1.node = dummy_packet[1]
 # set the destination byte and transmit the packet
-radio1.send(dummy_packet[4:],destination=dummy_packet[0],keep_listening=True)
+radio1.send(dummy_packet[4:],
+    # set the 4-byte RadioHead header from the first four bytes of the dummy packet
+    destination=dummy_packet[0],node=dummy_packet[1],identifier=dummy_packet[2],flags=dummy_packet[3],
+    keep_listening=True)
+
 ```
 
