@@ -22,7 +22,7 @@
     </head>
     <body>
     <h1 id="zone1" class="zone" style="text-align:Left;">PY4 Manual Beacon Parser</h1>
-    Accepted Formats:<br><br>
+    Accepted Formats (one packet at a time, for now):<br><br>
     <div style="padding-left:1em;width:75%;word-break:break-all;">
         Raw Bytes:<br>
         b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'<br><br>
@@ -34,7 +34,7 @@
     <script type="text/python">
     from browser import document, html, bind, window
     #from helpers.beacon_parse_json import parse_beacon
-    import struct, time, pprint
+    import struct, time, pprint, random
     from collections import OrderedDict
     from browser.html import TABLE, TR, TH, TD, B
     import struct, time
@@ -64,6 +64,7 @@
         return lux
 
     def parse_beacon(beacon,debug=False):
+        print(f'packet length: {len(beacon)}')
         if beacon[0] in sats:
             #view[:]=beacon[4:]
             view=bytes(beacon[4:])
@@ -229,10 +230,6 @@
                         print(f'{"":>18} └── T: {(-1*((129.00-_rt)*0.403)+25)} {pd["rad_t"]}')
                 print()
             return parsed_beacon_data
-
-    import random
-
-
     def onload(event):
         """Triggered when file is read. The FileReader instance is
         event.target.
@@ -261,7 +258,6 @@
         evt.dataTransfer.dropEffect = 'copy' # Explicitly show this is a copy.
 
     top_table = document["zone3"].get(selector="ul")[0]
-    #most_recent = top_table.get(selector="li")[0]
     numPackets=0
     def addTableSummary(data):
         global numPackets
@@ -269,25 +265,19 @@
         output_table = document["check1"].checked
         if output_table:
             t=TABLE()
-            #_color=f"{choice(('56789abcd'))*6}"
             _color='#'
             for i in range(3):
                 _color+=f"{hex(random.randrange(0,255))[2:]}"
-            print(_color)
             t.id=f'parsed_packet_{numPackets}'
             t.set_style({"padding": "10px","columnWidth":"20em","backgroundColor": _color}) #
-            print(t.getAttributeNames())
             top_table.insertBefore(t, top_table.nextSibling)
             t <= TR(TD(f'packet_{numPackets}'))
             if data:
                 keys=list(data.keys())
                 keys=sorted(keys)
-                print(len(keys))
                 halfway=len(keys)//2
-                #print(dir(document["zone3"].style))
                 dlist=[]
                 for i in range(halfway):
-                    #print(i,i+halfway)
                     dlist.append(keys[i])
                     dlist.append(keys[halfway+i])
                     t <= TR(TD(B(keys[i]),style={"backgroundColor":"#aaaaaa"})+TD(data[keys[i]])+TD(B(keys[halfway+i]),style={"backgroundColor":"#aaaaaa"})+TD(data[keys[halfway+i]]))
@@ -305,8 +295,7 @@
         document["zone4"].clear()
 
     def change(event):
-        # document["zone3"].clear()
-        a = eval(document['zone2'].value)
+        a=eval(document['zone2'].value.lstrip(' '))
         if len(a) == 120:
             a=unhexlify(a)
         b=parse_beacon(a,debug=False)
@@ -318,7 +307,7 @@
     </script>
     <br><textarea id="zone2" rows=10 autocomplete="off" font-size="9px" style="padding-left:1em;width:auto;min-width:75%;">Paste beacon data here....</textarea>
     <br>Output to table<input type="checkbox" id="check1" checked> (otherwise output json)
-    <br><br><button id="button1">evaluate</button>  <button id="button2">clear</button>
+    <br><br><button id="button1">evaluate</button>  <button id="button2">clear output</button>
     <div id="zone3" class="zone" style="top-bottom: 30em;"><ul></ul></div>
     <table id="zone4"  class="zone"><table>
     </body>
