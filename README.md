@@ -1,3 +1,8 @@
+# PY4 is a joint CMU / NASA Ames Small Spacecraft Constellation.
+General mission webpage TBD
+
+----
+
 # Receiving & decoding PY4 beacon packets
 
 Each of the four PY4 spacecraft transmit a LoRa modulated beacon packet every 30 seconds.
@@ -7,7 +12,7 @@ PY4 Beacon modulation parameters
 |     LoRa Parameter        |   Value       |
 |:----------------------:   |:---------:    |
 |       Center Frequency    | 915.6 MHz     |
-|       Spreading Factor    | SF            |
+|       Spreading Factor    | 7             |
 |              Bandwidth    | 62.5 kHz      |
 |            Coding Rate    | 4 (CR4/8)     |
 |                    CRC    | True          |
@@ -56,7 +61,7 @@ There are two options for RX operation:
 
 If your groundstation has internet access, please consider running py4_rx_mqtt.py (no additional setup required) to help us keep track of beacon packets over time. A public grafana dashboard will be available to view historic data.
 
-Default radio config is an unmodified [Adafruit LoRa Bonnet](https://www.adafruit.com/product/4074) connected to the RPI. See [py4_rx.py](./rx_only/rpi_radio_helpers.py) to adjust pin assignments or LoRa parameters.
+Default radio config is an unmodified [Adafruit LoRa Bonnet](https://www.adafruit.com/product/4074) connected to the RPI. See [rpi_radio_helpers.py](./rx_only/rpi_radio_helpers.py) to adjust pin assignments or LoRa parameters.
 
 To start the script:
 ```bash
