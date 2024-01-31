@@ -29,10 +29,22 @@ with open('py4_gs_config.bin','rb') as f:
     l=f.read()
     py4_gs_config=eval(msgpack.unpackb(unhexlify(bytes(struct.unpack(f'>{int.from_bytes(l[:3],"big")}i',l[3:])))))
 
+# local broker debug only
+# py4_gs_config['mqtt_host'] = "10.0.0.155"
+
 # Setup MQTT client stuff
 mqttc = mqtt.Client(client_id=GROUND_STATION_ID)
-print("Connecting to mqtt broker ")
+print("Testing mqtt broker connection...")
 mqttc.username_pw_set(username=py4_gs_config['mqtt_client_username'],password=py4_gs_config['mqtt_client_password'])
+try:
+    test_rc = mqttc.connect(host=py4_gs_config['mqtt_host'],port=py4_gs_config['mqtt_port'])
+    if test_rc != mqtt.MQTT_ERR_SUCCESS:
+        print(f'\tERROR establishing test mqtt connection! {test_rc}')
+    else:
+        print(f'\tSuccess')
+        mqttc.disconnect()
+except Exception as e:
+    print(f'\tERROR establishing test mqtt connection! {e}')
 
 # packet log location
 PCKT_LOG = os.path.expanduser('~')+'/gs_pckts.txt'
@@ -72,15 +84,17 @@ def mqtt_publish():
         result = mqttc.publish(MQTT_DATA_TOPIC, payload=payload)
         mqttc.loop()
         if result.rc != mqtt.MQTT_ERR_SUCCESS and mqttc.loop() != mqtt.MQTT_ERR_SUCCESS:
-            print(f'PUB Error: {result.rc}')
+            print(f'PUB ERROR: {result.rc}')
             mqtt_cache.insert(0,payload)
+        else:
+            print(f'mqtt pub success.')
     except Exception as e:
-        print(f'MQTT Error: {e}')
+        print(f'MQTT ERROR: {e}')
         mqtt_cache.insert(0,payload)
 
 packet_count = 0
 timestamp=0
-print('Listening...')
+print('Listening for UHF packets...')
 while True:
     if radio1.rx_done():
         timestamp=time.time_ns()

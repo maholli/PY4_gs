@@ -16,6 +16,7 @@ import digitalio
 from micropython import const
 import adafruit_bus_device.spi_device as spidev
 
+
 # pylint: disable=bad-whitespace
 # Internal constants:
 # Register names (FSK Mode even though we use LoRa instead, from table 85)
@@ -716,7 +717,7 @@ class RFM9x:
         return sf_id
 
     @spreading_factor.setter
-    def spreading_factor(self, val: Literal[6, 7, 8, 9, 10, 11, 12]) -> None:
+    def spreading_factor(self, val):
         # Set spreading factor (set to 7 to match RadioHead Sf128).
         val = min(max(val, 6), 12)
 
@@ -771,17 +772,17 @@ class RFM9x:
         else:
             return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x40) >> 6
 
-    async def await_rx(self,timeout=60):
-        # TODO check for listening here?
-        _t=time.monotonic()+timeout
-        while not self.rx_done():
-            if time.monotonic() < _t:
-                yield
-            else:
-                # Timed out
-                return False
-        # Received something
-        return True
+    # async def await_rx(self,timeout=60):
+    #     # TODO check for listening here?
+    #     _t=time.monotonic()+timeout
+    #     while not self.rx_done():
+    #         if time.monotonic() < _t:
+    #             yield
+    #         else:
+    #             # Timed out
+    #             return False
+    #     # Received something
+    #     return True
 
     def crc_error(self):
         """crc status"""

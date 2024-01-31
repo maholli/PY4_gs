@@ -43,7 +43,7 @@ def save_cache():
 
 packet_count = 0
 timestamp=0
-print('Listening...')
+print('Listening for UHF packets...')
 while True:
     if radio1.rx_done():
         timestamp=time.time_ns()
