@@ -121,6 +121,7 @@ def parse_beacon(beacon,debug=False):
         if debug:
             _crc=0
             for i in range(len(view)-1): _crc^=view[i]
+            print(f'{"-"*20} {sats[beacon[1]]} {pd["sat_id"]} {hex(beacon[1])} {"-"*20}')
             print(f'{"Packet CRC":>23}: {bool(_crc==view[-1])} {hex(_crc)} {hex(view[-1])}')
             print(f'{"Boot Count":>23}: {view[0]} {pd["boot_cnt"]}')
             print(f'{"Error Count":>23}: {view[1]} {pd["sc_err_cnt"]}')
@@ -130,7 +131,6 @@ def parse_beacon(beacon,debug=False):
             print(f'{"":>18} └── Low Bat Timeout: {bool(view[4]>>3&1)} {pd["lowbtout_f"]}, Shutdown: {bool(view[4]>>5&1)} {pd["shutdown_f"]}')
             print(f'{"":>18} └── Deploy Wait: {bool(view[4]>>7&1)} {pd["deploy_wait"]}, Deploy Flag: {bool(view[4]>>6&1)} {pd["deploy_f"]}')
             print(f'{"":>18} └── RPI Status: {view[4]&3} {pd["rpi_status"]}')
-            print(f'{"-"*20} {sats[beacon[1]]} {pd["sat_id"]} {hex(beacon[1])} {"-"*20}')
             print(f'{"SC Time":>23}: {int.from_bytes(view[5:9],"big")} {pd["sc_time"]}')
             print(f'{"Power Config":>23}:')
             _pwrs = (pd["pwr_rf"],pd["pwr_sky"],pd["pwr_SAMD"],pd["pwr_iri"],pd["pwr_nova"],pd["pwr_rpi"])
