@@ -19,9 +19,10 @@ import paho.mqtt.client as mqtt
 from rpi_radio_helpers import radio1, cfg  # radio setup and config
 from beacon_parse_json import parse_beacon # PY4 beacon data unpacking
 
+# Please update. Can be set to anything you want your ground station to be called. 
+GROUND_STATION_ID = "gs01" # Letters and numbers only. No spaces
 # constants
 PARSE_AND_PRINT_BEACONS = True
-GROUND_STATION_ID = "gs01"
 MQTT_DATA_TOPIC   = f"py4/{GROUND_STATION_ID}/pckts"
 
 # load overly obscured MQTT credentials
