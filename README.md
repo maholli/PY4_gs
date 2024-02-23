@@ -2,6 +2,9 @@
 
 General mission webpage TBD
 
+> [!TIP]
+> You can manually parse PY4 beacons with this simple web app: https://maholli.github.io/PY4_gs/
+
 ----
 
 # Receiving & decoding PY4 beacon packets
