@@ -28,6 +28,10 @@
         b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'<br><br>
         Hexlified:<br>
         b'494c00000500000080386d49f31152000a4009000000b1005201a40001090051feb5feddff02001f0018c600780048019804130ed800000000000049'<br><br>
+        Ardruio / C-style byte array:<br>
+        49 4c 00 00 05 00 00 00 80 38 6d 49 f3 11 52 00 0a 40 09 00 00 00 b1 00 52 01 a4 00 01 09 00 51 fe b5 fe dd ff 02 00 1f 00 18 c6 00 78 00 48 01 98 04 13 0e d8 00 00 00 00 00 00 49<br>
+        or<br>
+        0x49, 0x4c, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x80, 0x38, 0x6d, 0x49, 0xf3, 0x11, 0x52, 0x00, 0x0a, 0x40, 0x09, 0x00, 0x00, 0x00, 0xb1, 0x00, 0x52, 0x01, 0xa4, 0x00, 0x01, 0x09, 0x00, 0x51, 0xfe, 0xb5, 0xfe, 0xdd, 0xff, 0x02, 0x00, 0x1f, 0x00, 0x18, 0xc6, 0x00, 0x78, 0x00, 0x48, 0x01, 0x98, 0x04, 0x13, 0x0e, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x49<br><br>
         Or drag and drop a binary File:
         <div id="drop_zone">Drop files here</div>
     </div>
@@ -300,7 +304,15 @@
         this_ip = request.text
 
     def change(event):
-        a=eval(document['zone2'].value.lstrip(' '))
+        a=document['zone2'].value.lstrip(' ')
+        if a.startswith('{'): a=a.lstrip('{')
+        if a.endswith('}'): a=a.rstrip('}')
+        if a.startswith('b"') or a.startswith("b'") or a.startswith('0x49'):
+            a=eval(a)
+            if isinstance(a,(list,tuple)):
+                a=bytes(a)
+        elif a.startswith('49 '):
+            a= unhexlify(a.replace(' ',''))
         if len(a) == 120:
             a=unhexlify(a)
         b=parse_beacon(a,debug=False)
