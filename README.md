@@ -1,6 +1,6 @@
-💡 PY4 is a joint CMU / NASA Ames Small Spacecraft Constellation.
+PY4 is a joint CMU / NASA Ames Small Spacecraft Constellation.
 
-General mission webpage TBD
+General mission webpage: to be announced
 
 > [!TIP]
 > You can manually parse PY4 beacons with this simple web app: https://maholli.github.io/PY4_gs/
