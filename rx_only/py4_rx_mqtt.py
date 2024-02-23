@@ -6,7 +6,8 @@ Listen for beacon packets, save locally, and send MQTT
 For use on RPI or similar. Wifi required.
 
 python external dependences:
-pip install msgpack paho-mqtt numpy
+pip install --upgrade paho-mqtt==1.6.1
+pip install msgpack numpy
 """
 
 # common python packages
