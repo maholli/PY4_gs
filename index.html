@@ -28,16 +28,16 @@
         b'IL\x00\x00\x05\x00\x00\x00\x808mI\xf3\x11R\x00\n@\t\x00\x00\x00\xb1\x00R\x01\xa4\x00\x01\t\x00Q\xfe\xb5\xfe\xdd\xff\x02\x00\x1f\x00\x18\xc6\x00x\x00H\x01\x98\x04\x13\x0e\xd8\x00\x00\x00\x00\x00\x00I'<br><br>
         Hexlified:<br>
         b'494c00000500000080386d49f31152000a4009000000b1005201a40001090051feb5feddff02001f0018c600780048019804130ed800000000000049'<br><br>
-        Binary File:
+        Or drag and drop a binary File:
         <div id="drop_zone">Drop files here</div>
     </div>
     <script type="text/python">
-    from browser import document, html, bind, window
+    from browser import document, html, bind, window, ajax
     #from helpers.beacon_parse_json import parse_beacon
     import struct, time, pprint, random
     from collections import OrderedDict
     from browser.html import TABLE, TR, TH, TD, B
-    import struct, time
+    import struct, time, json
     from collections import OrderedDict
     from binascii import unhexlify, hexlify
 
@@ -294,12 +294,24 @@
         document["zone3"].clear()
         document["zone4"].clear()
 
+    this_ip = ''
+    def complete(request):
+        global this_ip
+        this_ip = request.text
+
     def change(event):
         a=eval(document['zone2'].value.lstrip(' '))
         if len(a) == 120:
             a=unhexlify(a)
         b=parse_beacon(a,debug=False)
         addTableSummary(b)
+        ajax.get("https://api.ipify.org?format=json", blocking=True, oncomplete=complete)
+        global this_ip
+        ajax.post("https://ha.maholli.com/api/webhook/-q036W-rRItv7suBaQ-d_Yqbi",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({"gh_beacon": hexlify(a).decode(), "gh_time": time.time(), "client_ip": this_ip}),
+            )
+        this_ip=''
 
     document["zone2"].bind("click", clearDefault)
     document["button1"].bind("click", change)
