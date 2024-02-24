@@ -5,6 +5,13 @@ General mission webpage: to be announced
 > [!TIP]
 > You can manually parse PY4 beacons with this simple web app: https://maholli.github.io/PY4_gs/
 
+| Sat ID     	| Name 	| Space-Track Name 	|
+|:------------:	|:------:	|:------------------:	|
+| 0x4A  (74) 	| Leo  	| PY4-1            	|
+| 0x4B (75)  	| Don  	| PY4-2            	|
+| 0x4C (76)  	| Raph 	| PY4-3            	|
+| 0x4D (77)  	| Mike 	| PY4-4            	|
+
 ----
 
 # Receiving & decoding PY4 beacon packets
