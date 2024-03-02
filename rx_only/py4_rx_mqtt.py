@@ -73,6 +73,7 @@ def save_cache():
         'gs_time':pckt[0],
         'pckt_cnt':pckt[1],
         'pckt_rssi':pckt[2]-137,
+        # 'test':True, # manually let database know this is a test packet
         'pckt_hex':hexlify(pckt[3]).decode()
     }
     # queue mqtt payload to be sent
