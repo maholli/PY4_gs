@@ -121,51 +121,52 @@ def parse_beacon(beacon,debug=False):
         if debug:
             _crc=0
             for i in range(len(view)-1): _crc^=view[i]
-            print(f'{"-"*20} {sats[beacon[1]]} {pd["sat_id"]} {hex(beacon[1])} {"-"*20}')
-            print(f'{"Packet CRC":>23}: {bool(_crc==view[-1])} {hex(_crc)} {hex(view[-1])}')
-            print(f'{"Boot Count":>23}: {view[0]} {pd["boot_cnt"]}')
-            print(f'{"Error Count":>23}: {view[1]} {pd["sc_err_cnt"]}')
-            print(f'{"Vlowb Count":>23}: {view[3]} {pd["vlowb_cnt"]}')
+            _crc_msg = '' if _crc==view[-1] else '<----- BAD PACKET?? CRC FAIL -----'
+            print(f'{"-"*20} {pd["sat_id"]} {hex(beacon[1])} {"-"*20}')
+            print(f'{"Packet CRC":>23}: {bool(_crc==view[-1])} {hex(_crc)} {hex(view[-1])}{_crc_msg}')
+            print(f'{"Boot Count":>23}: {pd["boot_cnt"]}')
+            print(f'{"Error Count":>23}: {pd["sc_err_cnt"]}')
+            print(f'{"Vlowb Count":>23}: {pd["vlowb_cnt"]}')
             print(f'{"NVM Flags":>23}: {view[4]}')
-            print(f'{"":>18} └── Tumbling: {bool(view[4]>>4&1)} {pd["tumbling_f"]}, Detumbling: {bool(view[4]>>2&1)} {pd["detumbling_f"]}')
-            print(f'{"":>18} └── Low Bat Timeout: {bool(view[4]>>3&1)} {pd["lowbtout_f"]}, Shutdown: {bool(view[4]>>5&1)} {pd["shutdown_f"]}')
-            print(f'{"":>18} └── Deploy Wait: {bool(view[4]>>7&1)} {pd["deploy_wait"]}, Deploy Flag: {bool(view[4]>>6&1)} {pd["deploy_f"]}')
-            print(f'{"":>18} └── RPI Status: {view[4]&3} {pd["rpi_status"]}')
-            print(f'{"SC Time":>23}: {int.from_bytes(view[5:9],"big")} {pd["sc_time"]}')
+            print(f'{"":>18} └── Tumbling: {pd["tumbling_f"]}, Detumbling: {pd["detumbling_f"]}')
+            print(f'{"":>18} └── Low Bat Timeout: {pd["lowbtout_f"]}, Shutdown: {pd["shutdown_f"]}')
+            print(f'{"":>18} └── Deploy Wait: {pd["deploy_wait"]}, Deploy Flag: {pd["deploy_f"]}')
+            print(f'{"":>18} └── RPI Status: {pd["rpi_status"]}')
+            print(f'{"SC Time":>23}: {pd["sc_time"]}')
             print(f'{"Power Config":>23}:')
             _pwrs = (pd["pwr_rf"],pd["pwr_sky"],pd["pwr_SAMD"],pd["pwr_iri"],pd["pwr_nova"],pd["pwr_rpi"])
             for i,j in enumerate("".join(reversed(f'{view[9]:08b}'))):
                 if i>5: pass
-                else: print(f'{"":>18} └── {POWER_CONFIG[i]:>4}: {j} {_pwrs[i]}')
-            print(f'{"Vbatt":>23}: {view[10]/10:.1f}V {pd["vbatt"]}')
-            print(f'{"Charge Current":>23}: {view[11]*4}mA {pd["ichrg"]}')
+                else: print(f'{"":>18} └── {POWER_CONFIG[i]:>4}: {_pwrs[i]}')
+            print(f'{"Vbatt":>23}: {pd["vbatt"]}V')
+            print(f'{"Charge Current":>23}: {pd["ichrg"]}mA')
             _i = ((view[12]<<8) | view[13]) >> 4 # reduce from 16 bits to 12
             _i = _i * DSENSERES / SENSERES
-            print(f'{"Current Draw":>23}: {_i}A {pd["idraw"]}')
+            print(f'{"Current Draw":>23}: {pd["idraw"]}A')
             print(f'{"Radio Responses":>23}:')
             for i,j in enumerate(sats):
-                print(f'{"":>18} └── [{hex(j)} {sats[j]:>4}] {view[14:19][i]} {pd["radio_rsps"][i]}')
-            print(f'{"UHF CRC Error Count":>23}: {view[2]} {pd["uhf_err_cnt"]}')
-            print(f'{"Last UHF RSSI":>23}: {view[19]-137}dBm {pd["sc_last_rssi"]}')
+                print(f'{"":>18} └── [{hex(j)} {sats[j]:>4}] {pd["radio_rsps"][i]}')
+            print(f'{"UHF CRC Error Count":>23}: {pd["uhf_err_cnt"]}')
+            print(f'{"Last UHF RSSI":>23}: {pd["sc_last_rssi"]}dBm')
             # -------- rotating dataset ---------
             if view[20] == 0xA8:
                 print(f'{"GPS dataset":>23}')
                 _ecef = struct.unpack('<ddd',view[29:53])
-                print(f'{"":>18} └── time status {view[21]} {pd["time_stat"]}')
-                print(f'{"":>18} └── gps week {int.from_bytes(view[22:24],"little")} {pd["gps_week"]}')
-                print(f'{"":>18} └── time of week (s) {int.from_bytes(view[24:28],"little")/1000} {pd["gps_time"]}')
-                print(f'{"":>18} └── pos sol status {view[28]} {pd["pos_stat"]}')
-                print(f'{"":>18} └── ECEF-X {_ecef[0]}m {pd["ecef_x"]}')
-                print(f'{"":>18} └── ECEF-Y {_ecef[1]}m {pd["ecef_y"]}')
-                print(f'{"":>18} └── ECEF-Z {_ecef[2]}m {pd["ecef_z"]}')
-                print(f'{"":>18} └── SVs in sol {view[53]} {pd["sv_in_sol"]}')
-                print(f'{"SD RPI Files":>23}: {view[54]} {pd["sd_rpi_files"]}')
+                print(f'{"":>18} └── time status {pd["time_stat"]}')
+                print(f'{"":>18} └── gps week {pd["gps_week"]}')
+                print(f'{"":>18} └── time of week (s) {pd["gps_time"]}')
+                print(f'{"":>18} └── pos sol status {pd["pos_stat"]}')
+                print(f'{"":>18} └── ECEF-X {pd["ecef_x"]}m')
+                print(f'{"":>18} └── ECEF-Y {pd["ecef_y"]}m')
+                print(f'{"":>18} └── ECEF-Z {pd["ecef_z"]}m')
+                print(f'{"":>18} └── SVs in sol {pd["sv_in_sol"]}')
+                print(f'{"SD RPI Files":>23}: {pd["sd_rpi_files"]}')
 
             elif view[20] == b'R'[0]:
                 print(f'{"IMU/SUN/RAD dataset":>23}')
                 # File Counts
-                print(f'{"":>18} └── Range File #: {int.from_bytes(view[21:23],"big")} {pd["rng_file_cnt"]}')
-                print(f'{"":>18} └──   Rad File #: {int.from_bytes(view[23:25],"big")} {pd["rad_file_cnt"]}')
+                print(f'{"":>18} └── Range File #: {pd["rng_file_cnt"]}')
+                print(f'{"":>18} └──   Rad File #: {pd["rad_file_cnt"]}')
 
                 # IMU
                 print(f'{"IMU DATA":>23}')
@@ -173,23 +174,23 @@ def parse_beacon(beacon,debug=False):
                 raw_mag = tuple(x * MAG_SCALAR for x in raw_mag)
                 raw_gyro = struct.unpack('<hhh',view[31:37]) # (x,y,z)
                 raw_gyro = tuple(x * GYR_SCALAR for x in raw_gyro)
-                print(f'{"":>18} └──  IMU MAG: {raw_mag} {(pd["mag_x"],pd["mag_y"],pd["mag_z"])}')
-                print(f'{"":>18} └── IMU GYRO: {raw_gyro} {(pd["gyr_x"],pd["gyr_z"],pd["gyr_z"])}')
+                print(f'{"":>18} └──  IMU MAG: {(pd["mag_x"],pd["mag_y"],pd["mag_z"])}')
+                print(f'{"":>18} └── IMU GYRO: {(pd["gyr_x"],pd["gyr_z"],pd["gyr_z"])}')
 
                 # SUN
                 print(f'{"SUN DATA":>23}')
                 _suns = (pd["sun_xp"],pd["sun_yp"],pd["sun_zp"],pd["sun_xn"],pd["sun_yn"],pd["sun_zn"])
                 for i,j in enumerate(('+X','+Y','+Z','-X','-Y','-Z')):
                     pos = 37+(i*2)
-                    print(f'{"":>18} └── [{j}] [{pos}:{pos+2}]: {calc_lux(view[pos:pos+2])} {_suns[i]}')
+                    print(f'{"":>18} └── [{j}] [{pos}:{pos+2}]: {_suns[i]}')
 
                 # RAD
                 print(f'{"RAD DATA":>23}')
                 _which_rad = f'{"R1" if any(view[52:55]) else "R2"}'
-                print(f'{"":>18} └── {_which_rad}: {(2.5-(int.from_bytes(view[49:52],"big")*1.49012e-07))} {pd["rad_r1" if _which_rad == "R1" else "rad_r2"]}')
+                print(f'{"":>18} └── {_which_rad}: {pd["rad_r1" if _which_rad == "R1" else "rad_r2"]}')
                 if _which_rad == "R1":
                     _rt=(int.from_bytes(view[52:55],"big")*1.49012e-07*1000)
-                    print(f'{"":>18} └── T: {(-1*((129.00-_rt)*0.403)+25)} {pd["rad_t"]}')
+                    print(f'{"":>18} └── T: {pd["rad_t"]}')
             print()
         return parsed_beacon_data
 
