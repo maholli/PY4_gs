@@ -36,7 +36,16 @@ if len(sys.argv) > 1:
     # read out argument file. assume tinygs format
     with open(sys.argv[1],'rb') as f:
         l=f.read()
-    prior_pckts.append(l)
+    if b'\n' in l:
+        lines = l.split(b'\n')
+        for line in lines:
+            if line and len(line)==120:
+                prior_pckts.append(binascii.unhexlify(line))
+    else:
+        if len(l) == 120:
+            prior_pckts.append(binascii.unhexlify(l))
+        else:
+            prior_pckts.append(l)
 else:
     # read default pckt file
     get_default_packets()
