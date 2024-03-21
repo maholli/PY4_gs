@@ -16,7 +16,6 @@ import digitalio
 from micropython import const
 import adafruit_bus_device.spi_device as spidev
 
-
 # pylint: disable=bad-whitespace
 # Internal constants:
 # Register names (FSK Mode even though we use LoRa instead, from table 85)
@@ -306,7 +305,6 @@ class RFM9x:
         # Set mode idle
         self.idle()
 
-
         # Set frequency
         self.frequency_mhz = frequency
         # Set preamble length (default 8 bytes to match radiohead).
@@ -375,7 +373,7 @@ class RFM9x:
         """
         self.crc_error_count = 0
 
-        self.auto_agc=True
+        # self.auto_agc=True
         self.pa_ramp=0   # mode agnostic
         self.lna_boost=3 # mode agnostic
 
@@ -606,15 +604,6 @@ class RFM9x:
     def pll_timeout(self):
         return (self._read_u8(_RH_RF95_REG_1C_HOP_CHANNEL))
 
-    def snr(self,raw=False):
-        # SNR(dB) of the last received message = PacketSnr [twos complement] / 4
-        _snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
-        if raw:
-            return _snr
-        if _snr > 127:
-            _snr = (256 - _snr) * -1
-        return _snr / 4 # dB
-
     def rssi(self,raw=False):
         """The received strength indicator (in dBm) of the last received message."""
         # Read RSSI register and convert to value using formula in datasheet.
@@ -772,12 +761,14 @@ class RFM9x:
     def tx_done(self):
         """Transmit status"""
         if self.dio0:
+            # print('TxDIO0: {}, {}'.format(self.dio0.value,hex((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x8) >> 3)))
             return self.dio0.value
         return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x8) >> 3
 
     def rx_done(self):
         """Receive status"""
         if self.dio0:
+            # print('RxDIO0: {}, {}'.format(self.dio0.value,hex((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x40) >> 6)))
             return self.dio0.value
         else:
             return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x40) >> 6
@@ -827,9 +818,7 @@ class RFM9x:
         # buffer be within an expected range of bounds. Disable this check.
         # pylint: disable=len-as-condition
 
-        if hasattr(self,'txrx'):  # TX
-            self.txrx[0].value=True
-            self.txrx[1].value=False
+        if hasattr(self,'txrx'): self.txrx(rx=False) # TX
 
         l=len(data)
         assert 0 < l <= 252
@@ -886,16 +875,13 @@ class RFM9x:
             if (time.monotonic() - start) >= self.xmit_timeout:
                 timed_out = True
 
-        if hasattr(self,'txrx'): # RX
-            self.txrx[0].value=False
-            self.txrx[1].value=True
-
         # Listen again if necessary and return the result packet.
         if keep_listening:
             self.listen()
         else:
             # Enter idle mode to stop receiving other packets.
             self.idle()
+        if hasattr(self,'txrx'): self.txrx(rx=True,_delay=0) # RX
         # Clear interrupt.
         self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
         return not timed_out
@@ -929,13 +915,13 @@ class RFM9x:
                         if ack_packet[2] == self.identifier:
                             got_ack = True
                             break
+            retries_remaining = retries_remaining - 1
             # pause before next retry -- random delay
-            if not got_ack:
+            if not got_ack and retries_remaining:
                 self.retry_counter+=1 # ADDED FOR PYCUBED
                 print('no uhf ack, sending again...')
                 # delay by random amount before next try
                 time.sleep(self.ack_wait + self.ack_wait * random())
-            retries_remaining = retries_remaining - 1
             # set retry flag in packet header
             self.flags |= _RH_FLAGS_RETRY
         self.flags = 0  # clear flags
@@ -958,9 +944,7 @@ class RFM9x:
            The payload then begins at packet[4].
            If with_ack is True, send an ACK after receipt (Reliable Datagram mode)
         """
-        if hasattr(self,'txrx'): # RX
-            self.txrx[0].value=False
-            self.txrx[1].value=True
+        if hasattr(self,'txrx'): self.txrx(rx=True,_delay=0) # RX
 
         timed_out = False
         if timeout is None:
@@ -987,7 +971,7 @@ class RFM9x:
         if not timed_out:
             if self.enable_crc and self.crc_error():
                 self.crc_error_count += 1
-                print('crc error. check for implicit header?')
+                print(f'crc err rx -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
                 if hasattr(self,'crc_errs'):
                     self.crc_errs+=1
             else:
@@ -1017,6 +1001,7 @@ class RFM9x:
                         and packet[0] != self.node
                         and packet[0] != self.gen_node
                     ):
+                        print(f'Not for me? Invalid header? {bytes(packet)}')
                         packet = None
                     # send ACK unless this was an ACK or a broadcast
                     elif (
@@ -1052,9 +1037,6 @@ class RFM9x:
                     ):  # skip the header if not wanted
                         packet = packet[4:]
 
-        if hasattr(self,'txrx'): # RX
-            self.txrx[0].value=False
-            self.txrx[1].value=True
 
         # Listen again if necessary and return the result packet.
         if keep_listening:
@@ -1062,6 +1044,7 @@ class RFM9x:
         else:
             # Enter idle mode to stop receiving other packets.
             self.idle()
+        if hasattr(self,'txrx'): self.txrx(rx=True,_delay=0) # RX
         # Clear interrupt.
         self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
         if view:
@@ -1171,6 +1154,7 @@ class RFM9x:
             _mode = 'wb+' # overwrite
             pos=0
         print(f'saving to {file} with mode {_mode}')
+        manual_stop=hasattr(self,'rx_fast_irq')
         with open(file,_mode) as f:
             if header: f.write(header+b'\r\n')
             if pos: f.seek(pos)
@@ -1178,7 +1162,15 @@ class RFM9x:
             _t=time.monotonic()+timeout
             while time.monotonic() < _t:
                 if self.rx_done():
+                    self.last_rssi = self._read_u8(_RH_RF95_REG_1A_PKT_RSSI_VALUE)
+                    self.last_snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
                     self.idle()
+                    if ((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x20) >> 5):
+                        # crc error
+                        self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
+                        self.listen()
+                        print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                        continue
                     fifo_length = self._read_u8(_RH_RF95_REG_13_RX_NB_BYTES)
                     if not _s: _s=fifo_length
                     current_addr = self._read_u8(_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR)
@@ -1187,14 +1179,18 @@ class RFM9x:
                     self._read_into(_RH_RF95_REG_00_FIFO, packet)
                     self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
                     self.listen()
-                    print(f.write(packet))
+                    _f = f.write(packet)
+                    print(f'{_f} -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
                     if fifo_length < _s:
                         print('finished!')
                         break
                     _t=time.monotonic()+timeout
+                elif manual_stop and self.rx_fast_irq(): # RPI keyboard stop
+                    print('finished kbd')
+                    break
         return file
 
-    def test_tx_pwr(self,t=3):
+    def test_tx_pwr(self,t=3,pwr=23):
         self.operation_mode = SLEEP_MODE
         time.sleep(0.01)
         # put chip into FSK mode
@@ -1204,7 +1200,7 @@ class RFM9x:
         self._write_u8(0x04, 0) # RegFdevMsb
         self._write_u8(0x05, 0) # RegFdevLsb
         # set tx_pwr
-        self.tx_power = 23
+        self.tx_power = pwr
         # packet format fixed length
         self._write_u8(0x30, 0) # RegPacketConfig1
         # data continuous mode
@@ -1215,3 +1211,8 @@ class RFM9x:
         self.operation_mode = TX_MODE
         time.sleep(t)
         self.operation_mode = STANDBY_MODE
+
+    def twoscomp(self,v):
+        if v > 127:
+            v = (256 - v) * -1
+        return v
