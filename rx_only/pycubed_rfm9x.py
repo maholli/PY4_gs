@@ -321,6 +321,7 @@ class RFM9x:
         self._write_u8(_RH_RF95_REG_26_MODEM_CONFIG3, 0x00)
         # Set transmit power to 13 dBm, a safe value any module supports.
         self.tx_power = 13
+        self.last_snr = 0
         # initialize last RSSI reading
         self.last_rssi = 0.0
         """The RSSI of the last received packet. Stored when the packet was received.
@@ -604,6 +605,15 @@ class RFM9x:
     @property
     def pll_timeout(self):
         return (self._read_u8(_RH_RF95_REG_1C_HOP_CHANNEL))
+
+    def snr(self,raw=False):
+        # SNR(dB) of the last received message = PacketSnr [twos complement] / 4
+        _snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
+        if raw:
+            return _snr
+        if _snr > 127:
+            _snr = (256 - _snr) * -1
+        return _snr / 4 # dB
 
     def rssi(self,raw=False):
         """The received strength indicator (in dBm) of the last received message."""
@@ -970,7 +980,8 @@ class RFM9x:
         # Payload ready is set, a packet is in the FIFO.
         packet = None
         # save last RSSI reading
-        self.last_rssi = self.rssi(raw=True)
+        self.last_rssi = self._read_u8(_RH_RF95_REG_1A_PKT_RSSI_VALUE)
+        self.last_snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
         # Enter idle mode to stop receiving other packets.
         self.idle()
         if not timed_out:

@@ -113,14 +113,16 @@ def parse_beacon(beacon,debug=False):
             'sun_yn'            :_sun_lux[4],
             'sun_zn'            :_sun_lux[5],
             _which_rad          :(2.5-(int.from_bytes(view[49:52],"big")*1.49012e-07)), # V
-            'rad_t'             :_rt, # deg C
+            'rad_t'             :float(_rt), # deg C
             })
+        _crc=0
+        for i in range(len(view)-1): _crc^=view[i]
+        if parsed_beacon_data['pckt_crc'] != _crc:
+            parsed_beacon_data['crc_fail'] = True
         # print(f'heard from {sats[beacon[1]]}:\n\t Packet: {bytes(view)}\n')
         # pprint(parsed_beacon_data)
-        pd = parsed_beacon_data
         if debug:
-            _crc=0
-            for i in range(len(view)-1): _crc^=view[i]
+            pd = parsed_beacon_data
             _crc_msg = '' if _crc==view[-1] else '<----- BAD PACKET?? CRC FAIL -----'
             print(f'{"-"*20} {pd["sat_id"]} {hex(beacon[1])} {"-"*20}')
             print(f'{"Packet CRC":>23}: {bool(_crc==view[-1])} {hex(_crc)} {hex(view[-1])}{_crc_msg}')
