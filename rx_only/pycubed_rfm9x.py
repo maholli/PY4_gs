@@ -1190,6 +1190,33 @@ class RFM9x:
                     break
         return file
 
+    def rpi_rx_fast(self,pckt_cache,timeout=10):
+        _t=time.monotonic()+timeout
+        while time.monotonic() < _t:
+            if self.rx_done():
+                self.last_rssi = self._read_u8(_RH_RF95_REG_1A_PKT_RSSI_VALUE)
+                self.last_snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
+                self.idle()
+                timestamp=time.time_ns()
+                # check for crc error
+                if ((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x20) >> 5):
+                    # crc error
+                    self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
+                    self.listen() # listen again
+                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                    continue
+                fifo_length = self._read_u8(_RH_RF95_REG_13_RX_NB_BYTES) # get packet length
+                current_addr = self._read_u8(_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR)
+                self._write_u8(_RH_RF95_REG_0D_FIFO_ADDR_PTR, current_addr) # set FIFO position
+                packet = self.buffview[:fifo_length]
+                self._read_into(_RH_RF95_REG_00_FIFO, packet) # get packet from FIFO
+                self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
+                self.listen() # listen again
+                # print(f'{len(packet)}')
+                print(f'{len(packet)} -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                pckt_cache.append([timestamp,0,self.last_rssi,bytes(packet)])
+                _t=time.monotonic()+timeout
+
     def test_tx_pwr(self,t=3,pwr=23):
         self.operation_mode = SLEEP_MODE
         time.sleep(0.01)
