@@ -122,17 +122,18 @@ def mqtt_publish():
         cnt+=1
         try:
             if not mqttc.is_connected():
+                try: mqttc.loop_stop()
+                except: pass
                 mqttc.connect(host=py4_gs_config['mqtt_host'],port=py4_gs_config['mqtt_port'])
+                mqttc.subscribe(MQTT_CTRL_TOPIC)
+                mqttc.loop_start()
             result = mqttc.publish(MQTT_DATA_TOPIC, payload=payload)
-            mqttc.loop()
-            if result.rc != mqtt.MQTT_ERR_SUCCESS and mqttc.loop() != mqtt.MQTT_ERR_SUCCESS:
-                print(f'PUB ERROR: {result.rc}')
-                mqtt_cache.insert(0,payload)
-            else:
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 print(f'mqtt pub success.')
-            if cnt > 5:
-                import sys
-                sys.exit()
+            else:
+                print(f'mqtt pub ERROR: {result.rc}')
+                mqtt_cache.insert(0,payload)
+                time.sleep(1)
         except Exception as e:
             print(f'MQTT ERROR: {e}')
             mqtt_cache.insert(0,payload)
