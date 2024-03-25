@@ -24,6 +24,10 @@ import paho.mqtt.client as mqtt
 from rpi_radio_helpers import radio1, cfg # radio setup and config
 from beacon_parse_json import parse_beacon # PY4 beacon data unpacking
 
+# manually hard-code the lora parameters (can still be updated over MQTT)
+radio1.set_params((1,10,500000,1)) # recent file downlink settings
+radio1.listen()
+
 # Please update. Can be set to anything you want your ground station to be called. 
 GROUND_STATION_ID = "" # Letters and numbers only. No spaces
 if not GROUND_STATION_ID:
