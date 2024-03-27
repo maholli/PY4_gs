@@ -124,7 +124,6 @@ radio1.node = dummy_packet[1]
 radio1.ack_delay= 0.2
 radio1.ack_wait = 2
 radio1.set_params(cfg['r1b']) # default CRC True, SF7, BW62500
-radio1._write_u8(0x11,0b00110111) # IRQ RxTimeout,RxDone,TxDone
 radio1.listen()
 
 # set the node id to the one used in the packet
