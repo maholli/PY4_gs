@@ -47,7 +47,8 @@ General python packages
 ```bash
 # uncomment below if you have trouble with pip. Adjust python version accordingly.
 # sudo rm /usr/lib/python3.12/EXTERNALLY-MANAGED
-pip3 install msgpack paho-mqtt numpy
+pip install --upgrade paho-mqtt==1.6.1
+pip install msgpack numpy
 ```
 
 Setting up CircuitPython (if not done already)
