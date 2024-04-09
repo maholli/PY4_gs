@@ -147,7 +147,7 @@ timestamp=0
 print('Listening for UHF packets...')
 while True:
     if radio1.rx_done():
-        radio1.rpi_rx_fast(packet_cache)
+        radio1.rpi_rx_fast(packet_cache,timeout=40)
     elif packet_cache:
         save_cache()
     elif mqtt_cache:
