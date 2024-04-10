@@ -311,6 +311,7 @@ class RFM9x:
         self.preamble_length = preamble_length
         # Defaults set modem config to RadioHead compatible Bw125Cr45Sf128 mode.
         self.signal_bandwidth = 125000
+        self.current_bandwidth_khz = 125
         self.coding_rate = code_rate
         self.spreading_factor = 7
         # Default to disable CRC checking on incoming packets.
@@ -623,6 +624,7 @@ class RFM9x:
             current_bandwidth = 500000
         else:
             current_bandwidth = bw_bins[bw_id]
+        self.current_bandwidth_khz = current_bandwidth/1000
         return current_bandwidth
 
     # @signal_bandwidth.setter
@@ -684,6 +686,11 @@ class RFM9x:
             else:
                 self._write_u8(0x2F, 0x44)
             self._write_u8(0x30, 0)
+        bw_id = (self._read_u8(_RH_RF95_REG_1D_MODEM_CONFIG1) & 0xF0) >> 4
+        if bw_id >= len(bw_bins):
+            self.current_bandwidth_khz = 500
+        else:
+            self.current_bandwidth_khz = bw_bins[bw_id]/1000
 
 
     @property
@@ -968,10 +975,12 @@ class RFM9x:
         self.last_snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
         # Enter idle mode to stop receiving other packets.
         self.idle()
+        # get frequency error
+        ferr = self.get_fei(_frqerr)
         if not timed_out:
             if self.enable_crc and self.crc_error():
                 self.crc_error_count += 1
-                print(f'crc err rx -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                print(f'crc err rx -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
                 if hasattr(self,'crc_errs'):
                     self.crc_errs+=1
             else:
@@ -1144,6 +1153,41 @@ class RFM9x:
         # TODO [x] test optional low_datarate_optimize mode?
         if len(p) > 3: self.low_datarate_optimize = p[3]
 
+    def lora_afc(self,freq_err_hz,starting_freq_mhz=915.6):
+        """
+        Adjust frequency setpoint and AFC register from provided FEI
+        set freq_err_hz to 0 to clear AFC register
+        """
+        if freq_err_hz == 0:
+            # clearing AFC
+            _ferr_ppm=0
+        else:
+            _ferr_ppm = freq_err_hz/starting_freq_mhz
+        _new_freq = (starting_freq_mhz*1e6)-freq_err_hz
+        # 8-bit two's complement register value for PPM Correction
+        if _ferr_ppm == 0:
+            _ppm_correction=0
+        elif _ferr_ppm < 0:
+            _ppm_correction=round(256+(0.95*_ferr_ppm))
+        else:
+            _ppm_correction=round(0.95*_ferr_ppm)
+        # set new center frequency
+        self._write_from(_RH_RF95_REG_06_FRF_MSB,
+                (int(_new_freq / _RH_RF95_FSTEP) & 0xFFFFFF).to_bytes(3,'big')
+                )
+        # set new ppmCorrection
+        self._write_u8(0x27,_ppm_correction)
+        print(f'Fnew: {_new_freq} PpmCorr: {_ppm_correction}')# debug only
+
+    def get_fei(self,fbuff):
+        # RegFeiMsb, RegFeiMid, RegFeiLsb
+        self._read_into(0x28, fbuff)
+        fbuff[0] = fbuff[0] & 0x0f # strip bits 7-4
+        twoscomp=int.from_bytes(fbuff,'big')
+        if twoscomp >= 524288: #524288=2<<(20-2) # mask
+            twoscomp -= 1048576 #1048576=2<<(20-1)
+        return (twoscomp*16777216/32000000)*(self.current_bandwidth_khz/500)
+
     def rx_fast(self,file,header=False,pos=0,timeout=10):
         # TODO [x] don't use this on flight unless changes are made
         self.listen()
@@ -1191,6 +1235,7 @@ class RFM9x:
         return file
 
     def rpi_rx_fast(self,pckt_cache,timeout=10):
+        _frqerr=bytearray(3)
         _t=time.monotonic()+timeout
         while time.monotonic() < _t:
             if self.rx_done():
@@ -1198,12 +1243,14 @@ class RFM9x:
                 self.last_snr = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
                 self.idle()
                 timestamp=time.time_ns()
+                # get frequency error
+                ferr = self.get_fei(_frqerr,_current_bandwidth)
                 # check for crc error
                 if ((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x20) >> 5):
                     # crc error
                     self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                     self.listen() # listen again
-                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
                     continue
                 fifo_length = self._read_u8(_RH_RF95_REG_13_RX_NB_BYTES) # get packet length
                 current_addr = self._read_u8(_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR)
@@ -1213,7 +1260,7 @@ class RFM9x:
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                 self.listen() # listen again
                 # print(f'{len(packet)}')
-                print(f'{len(packet)} -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB')
+                print(f'{len(packet)} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
                 pckt_cache.append([timestamp,0,self.last_rssi,bytes(packet)])
                 _t=time.monotonic()+timeout
 
