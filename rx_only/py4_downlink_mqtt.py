@@ -61,14 +61,19 @@ def on_mqtt_message(client, userdata, message):
     except Exception as e:
         print(f'MQTT Payload Error: {e}')
     if mqtt_msg:
-        if not all([i in mqtt_msg for i in ('SF','BW','CR','LDRO')]):
-            print('\tBAD mqtt cmd')
-        else:
-            radio_cmd = (mqtt_msg['CR'],mqtt_msg['SF'],mqtt_msg['BW'],mqtt_msg['LDRO'])
-            radio1.set_params(radio_cmd)
+        if 'FREQ_ERR' in mqtt_msg:
+            radio1.lora_afc(freq_err_hz=mqtt_msg['FREQ_ERR'])
+            client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
             radio1.listen()
-            print(f'\tRadio parameters updated. {mqtt_msg}')
-            client.publish('ota/status', payload=f'{client.my_client_id} success')
+        else:
+            if not all([i in mqtt_msg for i in ('SF','BW','CR','LDRO')]):
+                print('\tBAD mqtt cmd')
+            else:
+                radio_cmd = (mqtt_msg['CR'],mqtt_msg['SF'],mqtt_msg['BW'],mqtt_msg['LDRO'])
+                radio1.set_params(radio_cmd)
+                radio1.listen()
+                print(f'\tRadio parameters updated. {mqtt_msg}')
+                client.publish('ota/status', payload=f'{client.my_client_id} success')
 
 # Setup MQTT client stuff
 mqttc = mqtt.Client(client_id=GROUND_STATION_ID)
