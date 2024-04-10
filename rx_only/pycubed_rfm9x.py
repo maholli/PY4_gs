@@ -234,6 +234,7 @@ class RFM9x:
         self.max_output=max_output
         self.dio0=False
         self.gen_node=_RH_BROADCAST_ADDRESS
+        self.packet_ferr=0
         # Device support SPI mode 0 (polarity & phase = 0) up to a max of 10mhz.
         # Set Default Baudrate to 5MHz to avoid problems
         self._device = spidev.SPIDevice(spi, cs, baudrate=baudrate, polarity=0, phase=0)
@@ -976,11 +977,11 @@ class RFM9x:
         # Enter idle mode to stop receiving other packets.
         self.idle()
         # get frequency error
-        ferr = self.get_fei(_frqerr)
+        self.packet_ferr = self.get_fei(bytearray(3))
         if not timed_out:
             if self.enable_crc and self.crc_error():
                 self.crc_error_count += 1
-                print(f'crc err rx -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
+                print(f'crc err rx -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {self.packet_ferr:.0f}Hz')
                 if hasattr(self,'crc_errs'):
                     self.crc_errs+=1
             else:
@@ -998,6 +999,7 @@ class RFM9x:
                     self._read_into(_RH_RF95_REG_00_FIFO, packet)
                 # Clear interrupt.
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
+                print(f'{fifo_length} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {self.packet_ferr:.0f}Hz')
                 if fast:
                     return packet
                 if fifo_length < 5:
@@ -1244,13 +1246,13 @@ class RFM9x:
                 self.idle()
                 timestamp=time.time_ns()
                 # get frequency error
-                ferr = self.get_fei(_frqerr,_current_bandwidth)
+                ferr = self.get_fei(_frqerr)
                 # check for crc error
                 if ((self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x20) >> 5):
                     # crc error
                     self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                     self.listen() # listen again
-                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
+                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
                     continue
                 fifo_length = self._read_u8(_RH_RF95_REG_13_RX_NB_BYTES) # get packet length
                 current_addr = self._read_u8(_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR)
@@ -1260,7 +1262,7 @@ class RFM9x:
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                 self.listen() # listen again
                 # print(f'{len(packet)}')
-                print(f'{len(packet)} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {ferr}Hz')
+                print(f'{len(packet)} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
                 pckt_cache.append([timestamp,0,self.last_rssi,bytes(packet)])
                 _t=time.monotonic()+timeout
 

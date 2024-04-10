@@ -15,7 +15,7 @@ pip install msgpack numpy
 """
 
 # common python packages
-import time, os, msgpack, struct, json
+import time, os, msgpack, struct, json, sys
 from binascii import hexlify,unhexlify
 from pprint import pprint
 import paho.mqtt.client as mqtt

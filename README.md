@@ -5,12 +5,12 @@ General mission webpage: to be announced
 > [!TIP]
 > You can manually parse PY4 beacons with this simple web app: https://maholli.github.io/PY4_gs/
 
-| Sat ID     	| Name 	| Space-Track Name 	|
-|:------------:	|:------:	|:------------------:	|
-| 0x4A  (74) 	| Leo  	| PY4-1            	|
-| 0x4B (75)  	| Don  	| PY4-2            	|
-| 0x4C (76)  	| Raph 	| PY4-3            	|
-| 0x4D (77)  	| Mike 	| PY4-4            	|
+| Sat ID        | Name  | Space-Track Name  |
+|:------------: |:------:   |:------------------:   |
+| 0x4A  (74)    | Leo   | PY4-1             |
+| 0x4B (75)     | Don   | PY4-2             |
+| 0x4C (76)     | Raph  | PY4-3             |
+| 0x4D (77)     | Mike  | PY4-4             |
 
 ----
 
@@ -47,7 +47,8 @@ General python packages
 ```bash
 # uncomment below if you have trouble with pip. Adjust python version accordingly.
 # sudo rm /usr/lib/python3.12/EXTERNALLY-MANAGED
-pip3 install msgpack paho-mqtt numpy
+pip install --upgrade paho-mqtt==1.6.1
+pip install msgpack numpy
 ```
 
 Setting up CircuitPython (if not done already)
@@ -82,7 +83,7 @@ cd PY_gs/rx_only && python3 py4_rx_mqtt.py
 By default, the ground station will parse and print a formatted version of each beacon. To disable this, comment out the `PARSE_AND_PRINT_BEACONS` line of the respective script.
 
 ## Testing your RX station
-It can be helpful to test your RX ground station without relying on a satellite pass. Below is a 60-byte packet exactly as it would be stored in the radio's FIFO buffer upon successful beacon reception. 
+It can be helpful to test your RX ground station without relying on a satellite pass. Below is a 60-byte packet exactly as it would be stored in the radio's FIFO buffer upon successful beacon reception.
 
 ```python
 # python bytes format
@@ -123,7 +124,6 @@ radio1.node = dummy_packet[1]
 radio1.ack_delay= 0.2
 radio1.ack_wait = 2
 radio1.set_params(cfg['r1b']) # default CRC True, SF7, BW62500
-radio1._write_u8(0x11,0b00110111) # IRQ RxTimeout,RxDone,TxDone
 radio1.listen()
 
 # set the node id to the one used in the packet
@@ -134,4 +134,3 @@ radio1.send(dummy_packet[4:],
     keep_listening=True)
 
 ```
-
