@@ -62,9 +62,15 @@ def on_mqtt_message(client, userdata, message):
         print(f'MQTT Payload Error: {e}')
     if mqtt_msg:
         if 'FREQ_ERR' in mqtt_msg:
+            radio1.idle()
             radio1.lora_afc(freq_err_hz=mqtt_msg['FREQ_ERR'])
-            client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
             radio1.listen()
+            client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
+        elif 'FREQ_NEW' in mqtt_msg:
+            radio1.idle()
+            radio1.frequency_mhz = mqtt_msg['FREQ']
+            radio1.listen()
+            client.publish('ota/status', payload=f'{client.my_client_id} freq update success')
         else:
             if not all([i in mqtt_msg for i in ('SF','BW','CR','LDRO')]):
                 print('\tBAD mqtt cmd')
