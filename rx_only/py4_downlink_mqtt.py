@@ -52,6 +52,11 @@ with open('py4_gs_config.bin','rb') as f:
 # local broker debug only
 # py4_gs_config['mqtt_host'] = "10.0.0.155"
 
+def print_lora_settings():
+    settings_string = f'FREQ: {radio1.frequency_mhz:.4f}, CR:{radio1.coding_rate}, SF:{radio1.spreading_factor}, BW:{radio1.signal_bandwidth}, LDRO:{radio1.low_datarate_optimize}'
+    print(settings_string)
+    return settings_string
+
 # Create MQTT message callback
 def on_mqtt_message(client, userdata, message):
     mqtt_msg=False
@@ -65,21 +70,24 @@ def on_mqtt_message(client, userdata, message):
             radio1.idle()
             radio1.lora_afc(freq_err_hz=mqtt_msg['FREQ_ERR'])
             radio1.listen()
-            client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
-        elif 'FREQ_NEW' in mqtt_msg:
+            print('\tFreq error adjustment')
+            # client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
+        if 'FREQ_NEW' in mqtt_msg:
             radio1.idle()
             radio1.frequency_mhz = mqtt_msg['FREQ']
             radio1.listen()
-            client.publish('ota/status', payload=f'{client.my_client_id} freq update success')
-        else:
+            print('\tCenter freq adjustment only')
+            # client.publish('ota/status', payload=f'{client.my_client_id} freq update success')
+        if any([i in mqtt_msg for i in ('SF','BW','CR','LDRO')]):
             if not all([i in mqtt_msg for i in ('SF','BW','CR','LDRO')]):
-                print('\tBAD mqtt cmd')
+                print('\tBAD mqtt LORA settings cmd')
             else:
                 radio_cmd = (mqtt_msg['CR'],mqtt_msg['SF'],mqtt_msg['BW'],mqtt_msg['LDRO'])
                 radio1.set_params(radio_cmd)
                 radio1.listen()
-                print(f'\tRadio parameters updated. {mqtt_msg}')
-                client.publish('ota/status', payload=f'{client.my_client_id} success')
+                print(f'\tRadio parameters updated')
+        params=print_lora_settings()
+        client.publish('ota/status', payload=f'{client.my_client_id} success. {params}')
 
 # Setup MQTT client stuff
 mqttc = mqtt.Client(client_id=GROUND_STATION_ID)
@@ -155,7 +163,9 @@ def mqtt_publish():
 
 packet_count = 0
 timestamp=0
-print('Listening for UHF packets...')
+print('Current radio settings:')
+print_lora_settings()
+print('\nListening for UHF packets...')
 while True:
     if radio1.rx_done():
         radio1.rpi_rx_fast(packet_cache,timeout=40)
