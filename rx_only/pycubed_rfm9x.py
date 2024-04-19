@@ -235,6 +235,7 @@ class RFM9x:
         self.dio0=False
         self.gen_node=_RH_BROADCAST_ADDRESS
         self.packet_ferr=0
+        self.current_freq = frequency
         # Device support SPI mode 0 (polarity & phase = 0) up to a max of 10mhz.
         # Set Default Baudrate to 5MHz to avoid problems
         self._device = spidev.SPIDevice(spi, cs, baudrate=baudrate, polarity=0, phase=0)
@@ -923,6 +924,8 @@ class RFM9x:
                         if ack_packet[2] == self.identifier:
                             got_ack = True
                             break
+                    else:
+                        print(f'malformed ack pckt: {ack_packet}')
             retries_remaining = retries_remaining - 1
             # pause before next retry -- random delay
             if not got_ack and retries_remaining:
@@ -1163,9 +1166,11 @@ class RFM9x:
         if freq_err_hz == 0:
             # clearing AFC
             _ferr_ppm=0
+            starting_freq_mhz=915.6
         else:
             _ferr_ppm = freq_err_hz/starting_freq_mhz
         _new_freq = (starting_freq_mhz*1e6)-freq_err_hz
+        self.current_freq = _new_freq*1e-6
         # 8-bit two's complement register value for PPM Correction
         if _ferr_ppm == 0:
             _ppm_correction=0

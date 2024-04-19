@@ -67,8 +67,12 @@ def on_mqtt_message(client, userdata, message):
         print(f'MQTT Payload Error: {e}')
     if mqtt_msg:
         if 'FREQ_ERR' in mqtt_msg:
+            set_freq = mqtt_msg.get('FREQ_START',915.6)
+            if isinstance(set_freq,str):
+                # assume we want current frequency
+                set_freq=radio1.current_freq
             radio1.idle()
-            radio1.lora_afc(freq_err_hz=mqtt_msg['FREQ_ERR'])
+            radio1.lora_afc(freq_err_hz=mqtt_msg['FREQ_ERR'],starting_freq_mhz=set_freq)
             radio1.listen()
             print('\tFreq error adjustment')
             # client.publish('ota/status', payload=f'{client.my_client_id} afc update success')
