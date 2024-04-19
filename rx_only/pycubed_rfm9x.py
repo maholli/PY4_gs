@@ -1257,7 +1257,7 @@ class RFM9x:
                     # crc error
                     self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                     self.listen() # listen again
-                    print(f'crc err -- {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
+                    print(f'crc err -- [{int(time.time())}] {self.last_rssi-137}dBm {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
                     continue
                 fifo_length = self._read_u8(_RH_RF95_REG_13_RX_NB_BYTES) # get packet length
                 current_addr = self._read_u8(_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR)
@@ -1267,7 +1267,7 @@ class RFM9x:
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF) # clear interrupts
                 self.listen() # listen again
                 # print(f'{len(packet)}')
-                print(f'{len(packet)} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
+                print(f'[{int(time.time())}] {len(packet)} -- {self.last_rssi-137}dBm, {self.twoscomp(self.last_snr)/4}dB, {ferr:.0f}Hz')
                 pckt_cache.append([timestamp,0,self.last_rssi,bytes(packet)])
                 _t=time.monotonic()+timeout
 

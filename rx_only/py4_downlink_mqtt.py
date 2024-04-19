@@ -62,7 +62,7 @@ def on_mqtt_message(client, userdata, message):
     mqtt_msg=False
     try:
         mqtt_msg = json.loads(message.payload)
-        print(f'mqtt msg: {mqtt_msg}')
+        print(f'[{int(time.time())}] mqtt msg: {mqtt_msg}')
     except Exception as e:
         print(f'MQTT Payload Error: {e}')
     if mqtt_msg:
